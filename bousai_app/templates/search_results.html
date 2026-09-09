@@ -5,9 +5,24 @@
 <h2 class="page-title">検索結果</h2>
 
 {% if results %}
-  <ul class="result-list">
+  <ul class="result-list shelter-results">
     {% for shelter in results %}
-    <li>{{ shelter.name }}</li>
+    <li class="shelter-result">
+      <a href="{{ url_for('shelter_detail', shelter_id=shelter.id) }}" class="shelter-link">
+        <span>{{ shelter.name }}</span>
+        <span class="shelter-arrow" aria-hidden="true">›</span>
+      </a>
+      <div class="shelter-tooltip" id="shelter-{{ shelter.id }}" role="tooltip">
+        <strong>{{ shelter.name }}</strong>
+        <a class="detail-link" href="{{ url_for('shelter_detail', shelter_id=shelter.id) }}">詳細情報を見る</a>
+        <span>距離: {% if shelter.distance_m is defined %}{{ shelter.distance_m }}m{% else %}未登録{% endif %}</span>
+        <span>収容人数: {% if shelter.capacity is defined %}{{ shelter.capacity }}人{% else %}未登録{% endif %}</span>
+        <span>津波: {% if shelter.tsunami or shelter.tsunami_ready %}対応{% else %}未登録{% endif %}</span>
+        <span>ペット: {% if shelter.pets or shelter.pet or shelter.pets_allowed %}可{% else %}未登録{% endif %}</span>
+        <span>車いす: {% if shelter.barrier_free %}対応{% else %}未登録{% endif %}</span>
+        <span>備蓄: {% if shelter.emergency_supplies or shelter.supplies %}あり{% else %}未登録{% endif %}</span>
+      </div>
+    </li>
     {% endfor %}
   </ul>
 {% else %}
@@ -15,7 +30,7 @@
 {% endif %}
 
 <p>
-  <a class="subtle-link" href="/shelter_search">検索画面に戻る</a>
+  <a class="subtle-link" href="/shelter_search">検索条件を変更</a>
   <span>　</span>
   <a class="subtle-link" href="/">トップページへ戻る</a>
 </p>

@@ -1,18 +1,50 @@
 [
   {
     "id": 1,
-    "name": "御所見小学校"
+    "name": "御所見小学校",
+    "latitude": 40.8244,
+    "longitude": 140.7400,
+    "distance_m": 650,
+    "capacity": 300,
+    "tsunami": true,
+    "pets": true,
+    "barrier_free": true,
+    "emergency_supplies": true
   },
   {
     "id": 2,
-    "name": "片瀬小学校"
+    "name": "片瀬小学校",
+    "latitude": 40.8313,
+    "longitude": 140.7475,
+    "distance_m": 1200,
+    "capacity": 250,
+    "tsunami": false,
+    "pets": true,
+    "barrier_free": true,
+    "emergency_supplies": false
   },
   {
     "id": 5,
-    "name": "鵠洋小学校"
+    "name": "鵠洋小学校",
+    "latitude": 40.8175,
+    "longitude": 140.7308,
+    "distance_m": 900,
+    "capacity": 400,
+    "tsunami": true,
+    "pets": false,
+    "barrier_free": false,
+    "emergency_supplies": true
   },
   {
     "id": 6,
-    "name": "川口小学校"
+    "name": "川口小学校",
+    "latitude": 40.8382,
+    "longitude": 140.7356,
+    "distance_m": 1800,
+    "capacity": 200,
+    "tsunami": false,
+    "pets": false,
+    "barrier_free": true,
+    "emergency_supplies": true
   }
 ]

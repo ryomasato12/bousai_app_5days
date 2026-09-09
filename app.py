@@ -144,9 +144,51 @@ def format_report_time(iso_str):
         return iso_str
 
 
-def filter_shelters(district=None):
-    """district 指定があれば一致する避難所のみ、なければ全件を返す"""
-    return [s for s in shelters if not district or s.get('district') == district]
+def shelter_distance(shelter):
+    """避難所までの距離をメートルで返す。未登録の場合は並び替え末尾にする。"""
+    value = shelter.get('distance_m', shelter.get('distance'))
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float('inf')
+
+
+def is_enabled(shelter, *keys):
+    """互換性のある項目名から真偽値を取得する。"""
+    return any(shelter.get(key) is True for key in keys)
+
+
+def filter_shelters(district=None, query=None, max_distance=None,
+                    tsunami=False, pets=False, barrier_free=False,
+                    supplies=False, sort='name'):
+    """検索条件を適用した避難所一覧を返す。"""
+    normalized_query = (query or '').strip().casefold()
+    results = []
+    for shelter in shelters:
+        name = str(shelter.get('name', ''))
+        if district and shelter.get('district') != district:
+            continue
+        if normalized_query and normalized_query not in name.casefold():
+            continue
+        if max_distance is not None and shelter_distance(shelter) > max_distance:
+            continue
+        if tsunami and not is_enabled(shelter, 'tsunami', 'tsunami_ready'):
+            continue
+        if pets and not is_enabled(shelter, 'pets', 'pet', 'pets_allowed'):
+            continue
+        if barrier_free and not is_enabled(shelter, 'barrier_free'):
+            continue
+        if supplies and not is_enabled(shelter, 'emergency_supplies', 'supplies'):
+            continue
+        results.append(shelter)
+
+    if sort == 'distance':
+        results.sort(key=lambda shelter: (shelter_distance(shelter), shelter.get('name', '')))
+    elif sort == 'capacity':
+        results.sort(key=lambda shelter: (-int(shelter.get('capacity', 0) or 0), shelter.get('name', '')))
+    else:
+        results.sort(key=lambda shelter: shelter.get('name', ''))
+    return results
 
 
 def parse_area_warnings(warning_data):
@@ -293,7 +335,19 @@ def shelter_register():
 # 避難所検索ページ
 @app.route('/shelter_search')
 def shelter_search():
-    return render_template('shelter_search.html')
+    return render_template(
+        'shelter_search.html',
+        shelter_names=sorted({s.get('name', '') for s in shelters if s.get('name')}),
+        shelters=shelters
+    )
+
+# 避難所詳細ページ
+@app.route('/shelter/<int:shelter_id>')
+def shelter_detail(shelter_id):
+    shelter = next((item for item in shelters if item.get('id') == shelter_id), None)
+    if shelter is None:
+        return '避難所が見つかりませんでした', 404
+    return render_template('shelter_detail.html', shelter=shelter)
 
 # 全施設一覧ページ
 @app.route('/all_shelters')
@@ -311,8 +365,22 @@ def board():
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
-    results = filter_shelters(request.args.get('district'))
-    return render_template('search_results.html', results=results)
+    max_distance = request.args.get('max_distance', type=float)
+    results = filter_shelters(
+        district=request.args.get('district'),
+        query=request.args.get('q'),
+        max_distance=max_distance,
+        tsunami=request.args.get('tsunami') == '1',
+        pets=request.args.get('pets') == '1',
+        barrier_free=request.args.get('barrier_free') == '1',
+        supplies=request.args.get('supplies') == '1',
+        sort=request.args.get('sort', 'name')
+    )
+    return render_template(
+        'search_results.html',
+        results=results,
+        search_params=request.args
+    )
 
 # JSON API：/shelters?district=地区名
 @app.route('/shelters', methods=['GET'])
