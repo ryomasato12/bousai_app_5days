@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>検索結果</h2>
+<section class="page-card">
+<h2 class="page-title">検索結果</h2>
 
 {% if results %}
-  <ul>
+  <ul class="result-list">
     {% for shelter in results %}
     <li>{{ shelter.name }}</li>
     {% endfor %}
@@ -14,7 +15,9 @@
 {% endif %}
 
 <p>
-  <a href="/shelter_search">検索画面に戻る</a> |
-  <a href="/">トップページへ戻る</a>
+  <a class="subtle-link" href="/shelter_search">検索画面に戻る</a>
+  <span>　</span>
+  <a class="subtle-link" href="/">トップページへ戻る</a>
 </p>
+</section>
 {% endblock %}

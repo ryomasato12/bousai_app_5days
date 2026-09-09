@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>避難所登録</h2>
-<p>新しい避難所情報を登録します。</p>
+<section class="page-card">
+<h2 class="page-title">避難所登録</h2>
+<p class="page-description">新しい避難所情報を登録します。</p>
 
 <!-- 成功・エラーメッセージ表示 -->
 {% if success %}
-  <p>{{ message }}</p>
+  <p class="form-message">{{ message }}</p>
 {% endif %}
 
 {% if error %}
-  <p>{{ message }}</p>
+  <p class="form-message error">{{ message }}</p>
 {% endif %}
 
 <form method="POST">
@@ -20,4 +21,5 @@
   </p>
   <p><button type="submit">登録</button></p>
 </form>
+</section>
 {% endblock %}

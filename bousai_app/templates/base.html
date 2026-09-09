@@ -4,27 +4,241 @@
   <meta charset="utf-8">
   <title>{% block title %}防災アプリ{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --brand-blue: #2f5eaf;
+      --text-blue: #2859a5;
+      --success-green: #249447;
+      --page-background: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: #4e5d70;
+      background: var(--page-background);
+      font-family: "Noto Sans JP", "Yu Gothic", sans-serif;
+    }
+
+    .site-header {
+      position: relative;
+      z-index: 10000;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 max(24px, calc((100% - 1380px) / 2));
+      color: #fff;
+      background: var(--brand-blue);
+    }
+
+    .site-title {
+      margin: 0;
+      color: #fff;
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .menu-button {
+      border: 0;
+      cursor: pointer;
+      color: #fff;
+      background: transparent;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .site-nav {
+      display: none;
+      position: fixed;
+      top: 70px;
+      right: max(24px, calc((100% - 1380px) / 2));
+      z-index: 20000;
+      min-width: 210px;
+      padding: 12px 16px;
+      background: #fff;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 14px rgba(57, 87, 125, 0.18);
+    }
+
+    .site-nav.is-open {
+      display: block;
+    }
+
+    .site-nav a {
+      display: block;
+      padding: 9px 0;
+      color: var(--text-blue);
+      text-decoration: none;
+    }
+
+    .site-nav a:hover {
+      text-decoration: underline;
+    }
+
+    .page-card {
+      padding: 30px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(57, 87, 125, 0.08);
+    }
+
+    .page-title {
+      margin: 0 0 12px;
+      color: var(--text-blue);
+      font-size: 26px;
+    }
+
+    .page-description {
+      margin: 0 0 24px;
+      color: #68778a;
+    }
+
+    .primary-link,
+    form button {
+      display: inline-block;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 20px;
+      color: #fff;
+      background: var(--brand-blue);
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .primary-link:hover,
+    form button:hover {
+      background: #244d94;
+    }
+
+    form p { margin: 0 0 20px; }
+
+    label {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: #3e5068;
+      font-weight: 700;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: min(100%, 420px);
+      padding: 11px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #334155;
+      font: inherit;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(47, 94, 175, 0.25);
+      border-color: var(--brand-blue);
+    }
+
+    .form-message {
+      margin: 0 0 20px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #eef5ff;
+      color: var(--text-blue);
+    }
+
+    .form-message.error {
+      background: #fff1f1;
+      color: #b42318;
+    }
+
+    .result-list {
+      margin: 0 0 24px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .result-list li {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e5eaf1;
+      color: #3e5068;
+    }
+
+    .result-list li:first-child { border-top: 1px solid #e5eaf1; }
+
+    .subtle-link {
+      color: var(--text-blue);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .subtle-link:hover { text-decoration: underline; }
+
+    .notice-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .notice-table th,
+    .notice-table td {
+      padding: 13px 15px;
+      border-bottom: 1px solid #e5eaf1;
+      text-align: left;
+    }
+
+    .notice-table th {
+      color: #fff;
+      background: var(--brand-blue);
+    }
+
+    .notice-table tr:last-child td { border-bottom: 0; }
+
+    main {
+      width: min(910px, calc(100% - 32px));
+      margin: 32px auto 80px;
+    }
+
+    @media (max-width: 600px) {
+      .site-header { height: 62px; }
+      .site-title { font-size: 21px; }
+      main { width: min(100% - 20px, 910px); margin-top: 20px; }
+      .site-nav { top: 62px; right: 10px; }
+      .page-card { padding: 20px; }
+      .page-title { font-size: 22px; }
+    }
+  </style>
 </head>
 <body>
-  <!-- ヘッダー -->
-  <h1>防災アプリ</h1>
+  <header class="site-header">
+    <h1 class="site-title">防災アプリ</h1>
+    <button class="menu-button" id="menuButton" type="button" aria-label="メニュー" aria-expanded="false">☰</button>
+  </header>
 
-  <!-- ナビゲーション -->
-  <nav>
-    <a href="/">ホーム</a> |
-    <a href="/shelter_search">避難所検索</a> |
-    <a href="/shelter_register">避難所登録</a> |
+  <nav class="site-nav" id="siteNav">
+    <a href="/">ホーム</a>
+    <a href="/shelter_search">避難所検索</a>
+    <a href="/shelter_register">避難所登録</a>
     <a href="/board">指示・発信ボード</a>
-    ｜
     {% if session.logged_in %}
-      ログイン中{% if session.username %}（{{ session.username }}）{% endif %}
       <a href="/logout">ログアウト</a>
     {% else %}
-      未ログイン
       <a href="/login">ログイン</a>
     {% endif %}
   </nav>
-  <hr>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const menuButton = document.getElementById('menuButton');
+      const siteNav = document.getElementById('siteNav');
+
+      menuButton.addEventListener('click', function() {
+        const isOpen = siteNav.classList.toggle('is-open');
+        menuButton.setAttribute('aria-expanded', String(isOpen));
+      });
+    });
+  </script>
 
   <main>
     <!-- ここに子テンプレートの content が入る -->

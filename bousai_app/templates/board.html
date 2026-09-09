@@ -3,13 +3,14 @@
 {% block title %}指示・発信ボード - 防災アプリ{% endblock %}
 
 {% block content %}
-<h2>発信ボード</h2>
-<p>住民向けの発信を登録・確認できます。</p>
+<section class="page-card">
+<h2 class="page-title">発信ボード</h2>
+<p class="page-description">住民向けの発信を登録・確認できます。</p>
 
 <!-- 発信一覧 -->
 <h3>発信一覧</h3>
 {% if instructions %}
-<table border="1" cellpadding="5">
+<table class="notice-table">
   <tr>
     <th>内容</th>
   </tr>
@@ -22,4 +23,5 @@
 {% else %}
 <p>登録されている指示はありません。</p>
 {% endif %}
+</section>
 {% endblock %}

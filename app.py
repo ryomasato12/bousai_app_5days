@@ -29,7 +29,7 @@ PREFECTURE_CODE = "020000"  # 青森県
 AREA_NAME = "青森市"
 
 # ワークショップ課題：青森市の市区町村コードに変更する
-AREA_CODE = "1420500"
+AREA_CODE = "0220100"  # 青森市
 
 WARNING_URL = (
     f"https://www.jma.go.jp/bosai/warning/data/r8/{PREFECTURE_CODE}.json"
@@ -101,6 +101,11 @@ def save_instructions():
             json.dump(instructions, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+def save_shelters():
+    """避難所データをファイルに保存する"""
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(shelters, f, ensure_ascii=False, indent=2)
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -149,61 +154,45 @@ def parse_area_warnings(warning_data):
     if not isinstance(warning_data, list):
         raise ValueError("気象庁の警報・注意報データが新形式の配列ではありません")
 
+    reports = [
+        report for report in warning_data
+        if isinstance(report, dict)
+        and isinstance(report.get("reportDatetime"), str)
+        and report.get("reportDatetime")
+    ]
+    latest_report = max(
+        reports,
+        key=lambda report: report["reportDatetime"],
+        default={}
+    )
+    warning = latest_report.get("warning", {})
+    class20_items = warning.get("class20Items", [])
+    area = next(
+        (
+            item for item in class20_items
+            if isinstance(item, dict) and item.get("areaCode") == AREA_CODE
+        ),
+        None
+    )
+
     warnings = []
-    seen_codes = set()
-    report_datetimes = []
-
-    for report in warning_data:
-        if not isinstance(report, dict):
-            continue
-
-        report_datetime = report.get("reportDatetime")
-        if isinstance(report_datetime, str) and report_datetime:
-            report_datetimes.append(report_datetime)
-
-        warning = report.get("warning")
-        if not isinstance(warning, dict):
-            continue
-
-        class20_items = warning.get("class20Items", [])
-        if not isinstance(class20_items, list):
-            continue
-
-        area = next(
-            (
-                item for item in class20_items
-                if isinstance(item, dict)
-                and item.get("areaCode") == AREA_CODE
-            ),
-            None
-        )
-        if not area:
-            continue
-
-        kinds = area.get("kinds", [])
-        if not isinstance(kinds, list):
-            continue
-
-        for kind in kinds:
+    if area:
+        for kind in area.get("kinds", []):
             if not isinstance(kind, dict):
                 continue
-
             status = kind.get("status", "")
             code = kind.get("code", "")
-            if status not in ("発表", "継続") or not code or code in seen_codes:
-                continue
+            if status in ("発表", "継続") and code:
+                warnings.append({
+                    "name": WARNING_CODES.get(
+                        code,
+                        f"不明な警報・注意報 (コード: {code})"
+                    ),
+                    "code": code,
+                    "status": status
+                })
 
-            warnings.append({
-                "name": WARNING_CODES.get(
-                    code,
-                    f"不明な警報・注意報 (コード: {code})"
-                ),
-                "code": code,
-                "status": status
-            })
-            seen_codes.add(code)
-
-    latest_report_datetime = max(report_datetimes, default="")
+    latest_report_datetime = latest_report.get("reportDatetime", "")
     return warnings, latest_report_datetime
 
 
@@ -278,9 +267,27 @@ def logout():
     return redirect(url_for('index'))
 
 # 避難所登録ページ※user が避難所登録ページについて具体的に修正指示しない限り、このコードは正しいのでこのまま保持すること。
-@app.route('/shelter_register')
+@app.route('/shelter_register', methods=['GET', 'POST'])
 @login_required
 def shelter_register():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            return render_template(
+                'shelter_register.html',
+                error=True,
+                message='避難所名を入力してください。'
+            )
+
+        next_id = max((shelter.get('id', 0) for shelter in shelters), default=0) + 1
+        shelters.append({'id': next_id, 'name': name})
+        save_shelters()
+        return render_template(
+            'shelter_register.html',
+            success=True,
+            message='避難所を登録しました。'
+        )
+
     return render_template('shelter_register.html')
 
 # 避難所検索ページ
@@ -326,4 +333,4 @@ def api_weather_warnings():
     return jsonify(get_weather_warnings())
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', debug=True, port=5000)
