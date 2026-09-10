@@ -48,6 +48,17 @@
     object-fit: cover;
   }
 
+  .photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    padding: 6px;
+  }
+
+  .photo-gallery img { min-width: 0; min-height: 0; }
+
   .photo-placeholder { color: #999; font-size: 14px; }
 
   .photo-placeholder .preview-icon {
@@ -220,11 +231,13 @@
     <div class="search-result-detail">
       <h3 class="section-title">検索避難所名</h3>
       <div class="detail-row"><span class="detail-label">避難所名</span><div class="detail-value">{{ shelter.name or '-' }}</div></div>
-      <div class="detail-row"><span class="detail-label">郵便番号</span><div class="detail-value">{{ shelter.postal_code or '-' }}</div></div>
-      <div class="detail-row"><span class="detail-label">住所</span><div class="detail-value">{{ shelter.address or '-' }}</div></div>
-      <div class="detail-row"><span class="detail-label">建物名</span><div class="detail-value">{{ shelter.building_name or '-' }}</div></div>
-      <div class="detail-row"><span class="detail-label">避難所情報</span><div class="detail-value">{{ shelter.info or '-' }}</div></div>
-      <div class="detail-row"><span class="detail-label">連絡先</span><div class="detail-value">{{ shelter.contact or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">郵便番号</span><div class="detail-value">{{ shelter.postal_code or shelter.zip_code or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">住所</span><div class="detail-value">{{ shelter.address1 or shelter.address or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">建物名</span><div class="detail-value">{{ shelter.address2 or shelter.building_name or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">避難所情報</span><div class="detail-value">{{ shelter.information or shelter.info or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">連絡先</span><div class="detail-value">{{ shelter.phone or shelter.contact or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">最大収容人数</span><div class="detail-value">{{ shelter.capacity or '-' }}{% if shelter.capacity %}人{% endif %}</div></div>
+      <div class="detail-row"><span class="detail-label">災害の種類</span><div class="detail-value">{{ shelter.disaster_type or '-' }}</div></div>
 
       <h3 class="section-title">空き情報</h3>
       <div class="detail-row">
@@ -271,9 +284,14 @@
 
     <div class="search-result-preview">
       <div class="preview-photo">
-        {% set photo_url = shelter.photo_url or shelter.image_url or shelter.photo %}
-        {% if photo_url %}
-        <img src="{{ photo_url }}" alt="{{ shelter.name }}の外観写真">
+        {% if shelter.photos %}
+        <div class="photo-gallery">
+          {% for photo_url in shelter.photos %}
+          <img src="{{ photo_url }}" alt="{{ shelter.name }}の外観写真 {{ loop.index }}">
+          {% endfor %}
+        </div>
+        {% elif shelter.photo_url or shelter.image_url or shelter.photo %}
+        <img src="{{ shelter.photo_url or shelter.image_url or shelter.photo }}" alt="{{ shelter.name }}の外観写真">
         {% else %}
         <div class="photo-placeholder">
           <span class="preview-icon" aria-hidden="true"><i class="fas fa-image"></i></span>

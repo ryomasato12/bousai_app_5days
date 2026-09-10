@@ -95,6 +95,7 @@
         <input type="hidden" name="action" value="{{ 'update' if mode == 'edit' else 'create' }}">
         {% if mode == 'edit' %}<input type="hidden" name="shelter_id" value="{{ selected.id }}">{% endif %}
         <div class="field"><label for="name">名称 <span class="required-mark">*</span></label><input id="name" name="name" type="text" value="{{ selected.name if selected else '' }}" placeholder="青森市立〇〇小学校" required><small>避難所の正式名称を入力してください。</small></div>
+        <div class="field"><label for="postalCode">郵便番号 <span class="required-mark">*</span></label><input id="postalCode" name="postal_code" type="text" inputmode="numeric" maxlength="8" value="{{ selected.postal_code if selected else '' }}" placeholder="030-0000" required><small id="postalMessage">郵便番号を7桁入力すると住所1を自動入力します。</small></div>
         <div class="field"><label for="address1">住所1（番地まで） <span class="required-mark">*</span></label><input id="address1" name="address1" type="text" value="{{ (selected.address1 if selected and selected.address1 else selected.address if selected else '') }}" placeholder="青森市中央1-1-1" required><small>市区町村から番地まで入力してください。</small></div>
         <div class="field"><label for="address2">住所2（アパート名など）</label><input id="address2" name="address2" type="text" value="{{ selected.address2 if selected else '' }}" placeholder="〇〇ビル1階"><small>建物名や階数などがあれば入力してください。</small></div>
         <div class="field"><label for="phone">避難所の電話番号 <span class="required-mark">*</span></label><input id="phone" name="phone" type="tel" value="{{ (selected.phone if selected and selected.phone else selected.contact if selected else '') }}" placeholder="017-123-4567" required><small>避難所へ連絡できる電話番号を入力してください。</small></div>
@@ -123,7 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const addButton = document.getElementById('photoAddButton');
   const photoList = document.getElementById('newPhotoList');
   const submitButton = document.getElementById('submitButton');
-  if (!photoInput || !addButton || !photoList || !submitButton) return;
+  const postalCode = document.getElementById('postalCode');
+  const address1 = document.getElementById('address1');
+  const postalMessage = document.getElementById('postalMessage');
+  if (!photoInput || !addButton || !photoList || !submitButton || !postalCode || !address1) return;
   const selectedFiles = [];
   addButton.addEventListener('click', function() { photoInput.click(); });
   photoInput.addEventListener('change', function() {
@@ -145,9 +149,25 @@ document.addEventListener('DOMContentLoaded', function() {
     photoInput.files = transfer.files;
   }
   function validateRequired() {
-    submitButton.disabled = !['name', 'address1', 'phone', 'capacity'].every(function(id) { return document.getElementById(id).value.trim(); });
+    submitButton.disabled = !['name', 'postalCode', 'address1', 'phone', 'capacity'].every(function(id) { return document.getElementById(id).value.trim(); });
   }
-  ['name', 'address1', 'phone', 'capacity'].forEach(function(id) { document.getElementById(id).addEventListener('input', validateRequired); });
+  ['name', 'postalCode', 'address1', 'phone', 'capacity'].forEach(function(id) { document.getElementById(id).addEventListener('input', validateRequired); });
+  postalCode.addEventListener('input', function() {
+    const digits = postalCode.value.replace(/[^0-9]/g, '');
+    if (digits.length !== 7) return;
+    postalCode.value = digits.slice(0, 3) + '-' + digits.slice(3);
+    postalMessage.textContent = '住所を検索しています...';
+    fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + digits)
+      .then(function(response) { if (!response.ok) throw new Error(); return response.json(); })
+      .then(function(data) {
+        const result = data.results && data.results[0];
+        if (!result) throw new Error();
+        address1.value = result.address1 + result.address2 + result.address3;
+        postalMessage.textContent = '住所を自動入力しました。必要に応じて修正できます。';
+        validateRequired();
+      })
+      .catch(function() { postalMessage.textContent = '住所を取得できませんでした。住所1を入力してください。'; });
+  });
   validateRequired();
 });
 </script>

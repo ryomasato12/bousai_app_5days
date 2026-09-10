@@ -17,7 +17,8 @@
     "tsunami": true,
     "pets": true,
     "barrier_free": true,
-    "emergency_supplies": true
+    "emergency_supplies": true,
+    "postal_code": ""
   },
   {
     "id": 2,
@@ -37,7 +38,8 @@
     "tsunami": false,
     "pets": true,
     "barrier_free": true,
-    "emergency_supplies": false
+    "emergency_supplies": false,
+    "postal_code": ""
   },
   {
     "id": 5,
@@ -57,7 +59,8 @@
     "tsunami": true,
     "pets": false,
     "barrier_free": false,
-    "emergency_supplies": true
+    "emergency_supplies": true,
+    "postal_code": ""
   },
   {
     "id": 6,
@@ -77,20 +80,24 @@
     "tsunami": false,
     "pets": false,
     "barrier_free": true,
-    "emergency_supplies": true
+    "emergency_supplies": true,
+    "postal_code": ""
   },
   {
     "id": 7,
     "name": "府中小学校",
-    "address1": "ホロしまし",
-    "address2": "",
+    "address1": "広島県安芸郡府中町本町",
+    "address2": "ビル",
     "phone": "08091378185",
-    "capacity": "",
+    "capacity": "60",
     "disaster_type": "津波",
-    "information": "",
-    "photos": [],
+    "information": "布団あり",
+    "photos": [
+      "/static/uploads/dog.png"
+    ],
     "address": "ホロしまし",
-    "contact": "08091378185"
+    "contact": "08091378185",
+    "postal_code": "735-0006"
   },
   {
     "id": 8,
@@ -101,6 +108,9 @@
     "capacity": "10",
     "disaster_type": "",
     "information": "",
-    "photos": []
+    "photos": [],
+    "address": "きたほろしまし",
+    "contact": "0000000000",
+    "postal_code": ""
   }
 ]

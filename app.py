@@ -132,6 +132,7 @@ def normalize_shelter(record, fallback_id):
     normalized['name'] = str(record.get('name', '')).strip()
     normalized['address1'] = str(record.get('address1') or record.get('address') or '').strip()
     normalized['address2'] = str(record.get('address2') or '').strip()
+    normalized['postal_code'] = str(record.get('postal_code') or record.get('zip_code') or '').strip()
     normalized['phone'] = str(record.get('phone') or record.get('contact') or '').strip()
     normalized['address'] = normalized['address1']
     normalized['contact'] = normalized['phone']
@@ -517,10 +518,13 @@ def shelter_register():
             mode = 'edit' if action == 'update' else 'create'
             name = request.form.get('name', '').strip()
             address1 = request.form.get('address1', '').strip()
+            postal_code = request.form.get('postal_code', '').strip()
             phone = request.form.get('phone', '').strip()
             capacity = request.form.get('capacity', '').strip()
-            if not name or not address1 or not phone or not capacity:
-                error = '名称、住所1、電話番号、最大収容人数は必須です。'
+            if not name or not postal_code or not address1 or not phone or not capacity:
+                error = '名称、郵便番号、住所1、電話番号、最大収容人数は必須です。'
+            elif not postal_code.replace('-', '').isdigit() or len(postal_code.replace('-', '')) != 7:
+                error = '郵便番号は7桁で入力してください。'
             elif not capacity.isdigit() or int(capacity) < 1:
                 error = '最大収容人数は1以上の数値を入力してください。'
             else:
@@ -528,9 +532,12 @@ def shelter_register():
                     new_photos = save_uploaded_photos(request.files.getlist('photos'))
                     fields = {
                         'name': name,
+                        'postal_code': postal_code,
                         'address1': address1,
                         'address2': request.form.get('address2', '').strip(),
                         'phone': phone,
+                        'address': address1,
+                        'contact': phone,
                         'capacity': capacity,
                         'disaster_type': request.form.get('disaster_type', '').strip(),
                         'information': request.form.get('information', '').strip(),
@@ -589,14 +596,6 @@ def shelter_search():
         shelter_names=sorted({s.get('name', '') for s in shelters if s.get('name')}),
         shelters=shelters
     )
-
-# 避難所詳細ページ
-@app.route('/shelter/<int:shelter_id>')
-def shelter_detail(shelter_id):
-    shelter = next((item for item in shelters if item.get('id') == shelter_id), None)
-    if shelter is None:
-        return '避難所が見つかりませんでした', 404
-    return render_template('shelter_detail.html', shelter=shelter)
 
 # 全施設一覧ページ
 @app.route('/all_shelters')
@@ -764,7 +763,7 @@ def checkin():
             'availability': availability,
             'remaining': remaining,
         })
-    return redirect(url_for('shelter_detail', shelter_id=shelter_id))
+    return redirect(url_for('search_results', q=shelter.get('name', '')))
 
 # JSON API：/shelters?district=地区名
 @app.route('/shelters', methods=['GET'])

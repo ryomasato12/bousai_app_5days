@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			shelter.pets ? 'ペット: 可' : 'ペット: 未登録',
 			shelter.barrier_free ? '車いす: 対応' : '車いす: 未登録',
 			shelter.emergency_supplies ? '備蓄: あり' : '備蓄: 未登録',
-			'<a href="/shelter/' + shelter.id + '">詳細情報を見る</a>',
+			'<a href="/search_results?q=' + encodeURIComponent(shelter.name) + '">詳細情報を見る</a>',
 			'<button type="button" class="map-filter-button" data-shelter-id="' + shelter.id + '">この施設だけ表示</button>'
 		];
 		const summary = shelter.name + ' / 収容 ' +
