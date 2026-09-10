@@ -1,27 +1,149 @@
 {% extends "base.html" %}
 
-{% block title %}指示・発信ボード - 防災アプリ{% endblock %}
+{% block title %}指示・発信ボード | 防災アプリ{% endblock %}
 
 {% block content %}
-<section class="page-card">
-<h2 class="page-title">発信ボード</h2>
-<p class="page-description">住民向けの発信を登録・確認できます。</p>
+<style>
+  .board-page { width: min(1100px, 100%); margin: 0 auto; }
+  .board-panel { padding: 24px; border: 1px solid #dbe3ee; border-radius: 8px; background: #fff; box-shadow: 0 3px 12px rgba(57, 87, 125, 0.08); }
+  .board-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .board-heading h2 { margin: 0; }
+  .board-form { display: grid; gap: 16px; }
+  .board-field label { display: block; margin-bottom: 6px; color: #3e5068; font-weight: 700; }
+  .board-field input, .board-field select, .board-field textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; color: #334155; font: inherit; }
+  .board-field textarea { min-height: 130px; resize: vertical; }
+  .board-field small { display: block; margin-top: 5px; color: #68778a; font-size: 12px; }
+  .conditional-field { display: none; }
+  .conditional-field.is-visible { display: block; }
+  .board-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  .board-buttons button, .draft-load button { padding: 10px 14px; border: 0; border-radius: 6px; color: #fff; background: var(--brand-blue); font: inherit; font-weight: 700; cursor: pointer; }
+  .board-buttons button:hover, .draft-load button:hover { background: #244d94; }
+  .board-buttons .draft-button { color: #334155; background: #e8eef5; }
+  .board-buttons .draft-button:hover { background: #d8e1ec; }
+  .form-message { margin: 0 0 16px; padding: 12px 14px; border-radius: 6px; background: #eef5ff; color: #2859a5; }
+  .form-message.error { background: #fff1f1; color: #b42318; }
+  .draft-area { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e5eaf1; }
+  .draft-area label { display: block; margin-bottom: 6px; color: #3e5068; font-weight: 700; }
+  .draft-area select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+  .history-heading { margin: 28px 0 12px; color: #2859a5; font-size: 20px; }
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th, .history-table td { padding: 11px 10px; border-bottom: 1px solid #e5eaf1; text-align: left; vertical-align: top; }
+  .history-table th { color: #fff; background: var(--brand-blue); font-size: 13px; }
+  .history-table td { color: #536176; font-size: 14px; }
+  .history-table .content-cell { white-space: pre-wrap; }
+  .status-complete { color: #249447; font-weight: 700; }
+  .status-cancelled { color: #b42318; font-weight: 700; }
+  .cancel-button { padding: 7px 10px; border: 0; border-radius: 5px; color: #fff; background: #c83d32; font: inherit; cursor: pointer; }
+  .cancel-button:hover { background: #a83229; }
+  .empty-history { padding: 14px; color: #68778a; background: #f5f7fa; }
+  .modal-backdrop { position: fixed; inset: 0; z-index: 30000; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(20, 32, 48, 0.58); }
+  .modal-backdrop.is-open { display: flex; }
+  .cancel-modal { width: min(420px, 100%); padding: 24px; border-radius: 8px; background: #fff; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25); }
+  .cancel-modal h2 { margin: 0 0 10px; color: #3e5068; font-size: 20px; }
+  .cancel-modal p { margin: 0 0 18px; color: #536176; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-actions button { padding: 9px 14px; border: 0; border-radius: 6px; font: inherit; font-weight: 700; cursor: pointer; }
+  .modal-no { color: #334155; background: #e8eef5; }
+  .modal-yes { color: #fff; background: #c83d32; }
+  @media (max-width: 760px) { .board-panel { padding: 18px; } .board-heading { align-items: start; flex-direction: column; } .draft-area { grid-template-columns: 1fr; } .history-table { display: block; overflow-x: auto; white-space: nowrap; } }
+</style>
 
-<!-- 発信一覧 -->
-<h3>発信一覧</h3>
-{% if instructions %}
-<table class="notice-table">
-  <tr>
-    <th>内容</th>
-  </tr>
-  {% for inst in instructions %}
-  <tr>
-    <td>{{ inst.content }}{% if inst.shelter %}（避難先: {{ inst.shelter }}）{% endif %}</td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p>登録されている指示はありません。</p>
-{% endif %}
-</section>
-{% endblock %}
+<div class="board-page">
+  <section class="board-panel">
+    <div class="board-heading"><h2 class="page-title">指示・発信ボード</h2></div>
+    {% if message %}<p class="form-message" role="status">{{ message }}</p>{% endif %}
+    {% if error %}<p class="form-message error" role="alert">{{ error }}</p>{% endif %}
+
+    <form class="board-form" id="boardForm" method="post" action="{{ url_for('board_action') }}">
+      <div class="board-field">
+        <label for="kind">発信の種類</label>
+        <select id="kind" name="kind">
+          <option value="">選択してください</option>
+          {% for kind in ['災害時の指示', '防災tips', '獣害情報'] %}<option value="{{ kind }}" {% if form_data.get('kind') == kind %}selected{% endif %}>{{ kind }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="board-field"><label for="title">タイトル</label><input id="title" name="title" type="text" value="{{ form_data.get('title', '') }}"></div>
+      <div class="board-field conditional-field" id="targetField"><label for="target">送信先</label><select id="target" name="target"><option value="">選択してください</option>{% for target in ['住民', '消防団', '防災課', '道路管理課', 'A避難所', 'B避難所'] %}<option value="{{ target }}" {% if form_data.get('target') == target %}selected{% endif %}>{{ target }}</option>{% endfor %}</select></div>
+      <div class="board-field conditional-field" id="wildlifeFields">
+        <label for="location">発生場所</label><input id="location" name="location" type="text" value="{{ form_data.get('location', '') }}">
+        <label for="occurredAt">発生日時</label><input id="occurredAt" name="occurred_at" type="datetime-local" value="{{ form_data.get('occurred_at', '') }}">
+      </div>
+      <div class="board-field"><label for="content">送信内容</label><textarea id="content" name="content">{{ form_data.get('content', '') }}</textarea></div>
+      <div class="board-buttons">
+        <button type="submit" name="action" value="send">送信</button>
+        <button class="draft-button" type="submit" name="action" value="save_draft" formnovalidate>下書きを保存</button>
+      </div>
+    </form>
+
+    <form class="draft-load" method="post" action="{{ url_for('board_action') }}">
+      <div class="draft-area">
+        <div><label for="draftId">下書きを選択</label><select id="draftId" name="draft_id"><option value="">下書きはありません</option>{% for draft in drafts %}<option value="{{ draft.id }}">{{ draft.title or '無題の下書き' }} / {{ draft.saved_at }}</option>{% endfor %}</select></div>
+        <button type="submit" name="action" value="load_draft">下書きを呼び出す</button>
+      </div>
+    </form>
+
+    <h3 class="history-heading">発信履歴</h3>
+    {% if instructions %}
+    <div class="history-scroll"><table class="history-table"><thead><tr><th>タイトル</th><th>送信先</th><th>内容</th><th>発信日時</th><th>状態・操作</th></tr></thead><tbody>
+      {% for instruction in instructions %}
+      <tr><td>{{ instruction.title or instruction.content[:30] }}</td><td>{{ instruction.target or instruction.shelter or '-' }}</td><td class="content-cell">{{ instruction.content }}</td><td>{{ instruction.created_at or instruction.updated_at or '-' }}</td><td>{% if instruction.status == '取消' %}<span class="status-cancelled">取消</span>{% else %}<span class="status-complete">完了</span><button class="cancel-button" type="button" data-instruction-id="{{ instruction.id }}">取り消し</button>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+    {% else %}<p class="empty-history">登録されている発信履歴はありません。</p>{% endif %}
+  </section>
+</div>
+
+<div class="modal-backdrop" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cancelHeading" hidden>
+  <div class="cancel-modal">
+    <h2 id="cancelHeading">本当に取り消しますか？</h2>
+    <p>この発信は履歴に残り、状態だけが取消になります。</p>
+    <div class="modal-actions">
+      <button class="modal-no" id="cancelNo" type="button">いいえ</button>
+      <form method="post" action="{{ url_for('board_action') }}" id="cancelForm">
+        <input type="hidden" name="action" value="cancel">
+        <input type="hidden" name="instruction_id" id="cancelInstructionId">
+        <button class="modal-yes" type="submit">はい</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const kind = document.getElementById('kind');
+    const targetField = document.getElementById('targetField');
+    const wildlifeFields = document.getElementById('wildlifeFields');
+    const target = document.getElementById('target');
+    const location = document.getElementById('location');
+    const occurredAt = document.getElementById('occurredAt');
+    const content = document.getElementById('content');
+    const boardForm = document.getElementById('boardForm');
+    if (!kind || !content) return;
+    const defaults = { '災害時の指示': '災害が発生しています。安全を確保し、必要に応じて避難してください。', '防災tips': '災害に備え、身の安全を確保し、最新の防災情報を確認してください。', '獣害情報': '野生動物に遭遇した場合は近づかず、安全な場所へ移動してください。' };
+    let generatedContent = '';
+    function refreshFields() {
+      const wildlife = kind.value === '獣害情報';
+      targetField.classList.toggle('is-visible', kind.value === '災害時の指示');
+      wildlifeFields.classList.toggle('is-visible', wildlife);
+      target.required = kind.value === '災害時の指示';
+      location.required = wildlife;
+      occurredAt.required = wildlife;
+      if (!wildlife) { location.value = ''; occurredAt.value = ''; }
+      const base = defaults[kind.value] || '';
+      const suffix = wildlife && location.value && occurredAt.value ? '発生場所: ' + location.value + ' 発生日時: ' + occurredAt.value : '';
+      if (!content.value || content.value === generatedContent) { content.value = base + (suffix ? '\n' + suffix : ''); generatedContent = content.value; }
+    }
+    kind.addEventListener('change', refreshFields);
+    [location, occurredAt].forEach(function(input) { input.addEventListener('input', function() { if (kind.value === '獣害情報' && content.value === generatedContent) refreshFields(); }); });
+    boardForm.addEventListener('submit', function(event) { if (event.submitter && event.submitter.value === 'save_draft') return; if (!kind.value || !document.getElementById('title').value.trim() || !content.value.trim() || (kind.value === '災害時の指示' && !target.value) || (kind.value === '獣害情報' && (!location.value || !occurredAt.value))) { event.preventDefault(); alert('必須項目を入力してください。'); } });
+    refreshFields();
+
+    const modal = document.getElementById('cancelModal');
+    const instructionId = document.getElementById('cancelInstructionId');
+    document.querySelectorAll('.cancel-button').forEach(function(button) { button.addEventListener('click', function() { instructionId.value = button.dataset.instructionId; modal.hidden = false; modal.classList.add('is-open'); document.getElementById('cancelNo').focus(); }); });
+    function closeModal() { modal.hidden = true; modal.classList.remove('is-open'); }
+    document.getElementById('cancelNo').addEventListener('click', closeModal);
+    modal.addEventListener('click', function(event) { if (event.target === modal) closeModal(); });
+  });
+  </script>
+  {% endblock %}

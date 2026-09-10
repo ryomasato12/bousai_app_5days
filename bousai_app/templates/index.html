@@ -1,146 +1,165 @@
 {% extends "base.html" %}
 
+{% block title %}防災情報 | 防災アプリ{% endblock %}
+
 {% block content %}
-<section class="home-card map-card">
-    <h2 class="section-title"><span class="title-icon">●</span>避難所マップ</h2>
-    <div id="shelterMap"></div>
-</section>
-
-<section class="home-card weather-card">
-    <div class="weather-heading">
-        <h2 class="section-title"><span class="title-icon">☁</span>青森市 気象警報・注意報</h2>
-        <p class="refresh-label">↻ 10分おき自動更新</p>
-    </div>
-    <div id="weatherContent" class="weather-content">
-        <p>読み込み中...</p>
-    </div>
-</section>
-
 <style>
-    .home-card {
-        margin-bottom: 35px;
-        padding: 28px;
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 4px 18px rgba(57, 87, 125, 0.08);
-    }
-
-    .section-title {
-        margin: 0 0 20px;
-        color: var(--text-blue);
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    .title-icon {
-        display: inline-block;
-        margin-right: 9px;
-        color: var(--text-blue);
-        font-size: 20px;
-    }
-
-    #shelterMap {
-        height: 365px;
-        overflow: hidden;
-        border-radius: 12px;
-    }
-
-    .weather-heading {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-    }
-
-    .refresh-label {
-        margin: 0;
-        color: var(--success-green);
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .weather-content {
-        min-height: 135px;
-        padding: 20px;
-        border-radius: 11px;
-        background: #f5f6f8;
-    }
-
-    .weather-content p { margin: 0 0 10px; }
-    .weather-content p:last-child { margin-bottom: 0; }
-    .weather-content ul { margin: 4px 0 10px; padding-left: 22px; }
-
-    @media (max-width: 600px) {
-        .home-card { padding: 18px; margin-bottom: 20px; }
-        .section-title { font-size: 19px; }
-        #shelterMap { height: 290px; }
-        .weather-heading { display: block; }
-        .refresh-label { margin: -10px 0 17px; font-size: 14px; }
-    }
+  .home-dashboard { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); grid-template-rows: auto minmax(360px, 1fr); gap: 20px; }
+  .home-panel { min-width: 0; padding: 22px; border: 1px solid #dbe3ee; border-radius: 8px; background: #fff; box-shadow: 0 3px 12px rgba(57, 87, 125, 0.08); }
+  .disaster-panel { grid-row: 1 / span 2; }
+  .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #dbe3ee; }
+  .panel-heading h2 { margin: 0; color: #2859a5; font-size: 22px; }
+  .panel-heading p { margin: 0; color: #68778a; font-size: 13px; }
+  .status-section { margin-top: 20px; }
+  .status-section h3 { margin: 0 0 8px; color: #3e5068; font-size: 16px; }
+  .status-list, .tips-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .status-item { padding: 11px 13px; border-left: 4px solid #9aaabd; background: #f5f7fa; }
+  .status-item.important { border-left-color: #d99020; background: #fff7e6; }
+  .status-item.urgent { border-left-color: #c83d32; background: #fff0ef; }
+  .status-title { display: block; margin-bottom: 3px; color: #27364b; font-weight: 700; }
+  .status-content { color: #536176; font-size: 14px; }
+  .published-notices { display: grid; gap: 8px; margin-top: 20px; }
+  .published-notices h3 { margin: 0; color: #3e5068; font-size: 16px; }
+  .published-notice { padding: 12px 14px; border-left: 4px solid #2f5eaf; background: #eef5ff; }
+  .published-notice strong, .published-notice span { display: block; }
+  .published-notice strong { margin-bottom: 4px; color: #2859a5; }
+  .published-notice span { color: #536176; font-size: 14px; white-space: pre-wrap; }
+  .admin-status { margin-top: 20px; padding: 13px; border: 1px solid #d9b765; background: #fffaf0; }
+  .admin-status h3 { margin: 0 0 8px; color: #805d13; font-size: 16px; }
+  .admin-status p { margin: 0; color: #6d5a2c; font-size: 14px; }
+  .tips-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .tips-list li { border-bottom: 1px solid #e5eaf1; color: #4e5d70; font-size: 14px; }
+  .tips-list details { padding: 10px; }
+  .tips-list summary { color: #2859a5; cursor: pointer; font-weight: 700; }
+  .tips-list summary::marker { color: #2f5eaf; }
+  .tips-list details p { margin: 9px 0 0; color: #536176; white-space: pre-wrap; }
+  .map-panel { min-height: 360px; }
+  .map-controls { display: grid; gap: 12px; margin-bottom: 12px; }
+  .map-search-row { display: flex; gap: 8px; }
+  .map-search-row input { min-width: 0; flex: 1; }
+  .map-search-row button, .location-button { border: 0; border-radius: 6px; padding: 9px 12px; color: #fff; background: #2f5eaf; font: inherit; cursor: pointer; }
+  .map-search-row button:hover, .location-button:hover { background: #244d94; }
+  .layer-options { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0; padding: 0; border: 0; }
+  .layer-options legend { width: 100%; margin-bottom: 2px; color: #3e5068; font-size: 14px; font-weight: 700; }
+  .layer-options label { margin: 0; color: #4e5d70; font-size: 13px; font-weight: 400; }
+  .opacity-row { display: flex; align-items: center; gap: 10px; color: #536176; font-size: 13px; }
+  .opacity-row input { flex: 1; accent-color: #2f5eaf; }
+  #hazardMap { min-height: 245px; border: 1px solid #dbe3ee; }
+  .map-message { margin: 10px 0 0; color: #68778a; font-size: 13px; }
+  .map-message.error { color: #b42318; }
+  .source-links { margin: 10px 0 0; font-size: 12px; }
+  .source-links a { color: #2859a5; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+  @media (max-width: 800px) { .home-dashboard { grid-template-columns: 1fr; grid-template-rows: auto; } .disaster-panel { grid-row: auto; } }
+  @media (max-width: 520px) { .home-panel { padding: 16px; } .panel-heading { display: block; } .panel-heading p { margin-top: 5px; } .map-search-row { display: grid; grid-template-columns: 1fr auto; } }
 </style>
 
-<!-- Leaflet の読み込み -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="home-dashboard">
+  <section class="home-panel disaster-panel" aria-labelledby="disaster-heading">
+    <div class="panel-heading"><h2 id="disaster-heading" data-i18n="disasterInfo">災害情報</h2><p data-i18n="aomoriArea">青森市</p></div>
+    {% if session.logged_in %}
+    <div class="admin-status"><h3 data-i18n="staffInstructions">職員向け指示</h3>{% if staff_notices %}{% for notice in staff_notices %}<p><strong>{{ notice.target }}: {{ notice.title or notice.kind }}</strong><br>{{ notice.content }}</p>{% endfor %}{% else %}<p data-i18n="noStaffInstructions">現在、職員向け指示はありません。</p>{% endif %}</div>
+    {% endif %}
+    {% if resident_instructions %}
+    <section class="published-notices" aria-labelledby="published-notices-heading">
+      <h3 id="published-notices-heading">災害時の指示</h3>
+      {% for notice in resident_instructions %}
+      <article class="published-notice">
+        <strong>{{ notice.title or notice.kind }}</strong>
+        <span>{{ notice.content }}</span>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+    <div id="disasterStatus" aria-live="polite"></div>
+  </section>
 
+  <section class="home-panel" aria-labelledby="tips-heading">
+    <div class="panel-heading"><h2 id="tips-heading" data-i18n="disasterTips">防災tips</h2></div>
+    {% if resident_tips %}
+    <ul class="tips-list" id="tipsList">
+      {% for tip in resident_tips %}
+      <li><details><summary>{{ tip.title or '防災tips' }}</summary><p>{{ tip.content }}</p></details></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-tips">登録された防災tipsはありません。</p>
+    {% endif %}
+  </section>
+
+  <section class="home-panel map-panel" aria-labelledby="map-heading">
+    <div class="panel-heading"><h2 id="map-heading" data-i18n="hazardMap">ハザードマップ</h2></div>
+    <div class="map-controls">
+      <form class="map-search-row" id="mapSearchForm">
+        <label class="visually-hidden" for="mapSearch" data-i18n="placeSearchLabel">場所を検索</label>
+        <input id="mapSearch" type="search" placeholder="住所や地名を入力" data-i18n-placeholder="placeSearchPlaceholder">
+        <button type="submit" data-i18n="search">検索</button><button class="location-button" id="locationButton" type="button" data-i18n="currentLocation">現在地</button>
+      </form>
+      <fieldset class="layer-options"><legend data-i18n="hazardLayer">表示するレイヤー</legend>
+        <label><input type="radio" name="hazardType" value="tsunami" checked> <span data-i18n="tsunami">津波</span></label>
+        <label><input type="radio" name="hazardType" value="landslide"> <span data-i18n="landslide">土砂災害</span></label>
+        <label><input type="radio" name="hazardType" value="bear"> <span data-i18n="bear">過去の熊出現</span></label>
+        <label><input type="radio" name="hazardType" value="boar"> <span data-i18n="boar">過去のイノシシ出現</span></label>
+      </fieldset>
+      <label class="opacity-row" for="opacityRange"><span data-i18n="opacity">透過度</span><input id="opacityRange" type="range" min="20" max="100" value="65"><output id="opacityValue" for="opacityRange">65%</output></label>
+    </div>
+    <div id="hazardMap" aria-label="青森市のハザードマップ" data-i18n-aria-label="hazardMapAria"></div>
+    <p class="map-message" id="mapMessage" aria-live="polite"></p>
+    <p class="source-links"><a href="https://disaportal.gsi.go.jp/maps/index.html?base=std&amp;ll=140.7400,40.8244&amp;z=11&amp;ls=seamless_tsunami_scenario" target="_blank" rel="noopener" data-i18n="officialMap">国土地理院の公式詳細地図を開く</a></p>
+  </section>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 地図の初期化（青森市周辺を中心に設定）
-    const map = L.map('shelterMap').setView([40.8244, 140.7400], 12);
+  const translations = {
+    ja: { disasterInfo: '災害情報', aomoriArea: '青森市', disasterTips: '防災tips', hazardMap: 'ハザードマップ', staffInstructions: '職員向け指示', noStaffInstructions: '現在、職員向け指示はありません。', placeSearchLabel: '場所を検索', placeSearchPlaceholder: '住所や地名を入力', search: '検索', currentLocation: '現在地', hazardLayer: '表示するレイヤー', tsunami: '津波', landslide: '土砂災害', bear: '過去の熊出現', boar: '過去のイノシシ出現', opacity: '透過度', hazardMapAria: '青森市のハザードマップ', officialMap: '国土地理院の公式詳細地図を開く', searchFailed: '場所を検索できませんでした。', locationFailed: '現在地を取得できませんでした。', sourceUnavailable: '公式レイヤーをこの画面で取得できないため、公式詳細地図を利用してください。', noAnimalData: '公式の獣出現データは未設定です。架空の地点は表示していません。', normal: '現在、新しい情報はありません。', tips: ['非常持ち出し品をすぐ持ち出せる場所に準備しましょう。', '家族で避難場所と連絡方法を確認しておきましょう。', '危険を感じたら、早めに安全な場所へ避難しましょう。', '正しい情報を自治体や気象庁の発表で確認しましょう。', '停電に備えて、懐中電灯と予備の電池を用意しましょう。'] },
+    en: { disasterInfo: 'Disaster information', aomoriArea: 'Aomori City', disasterTips: 'Disaster tips', hazardMap: 'Hazard map', staffInstructions: 'Staff instructions', noStaffInstructions: 'There are no staff instructions.', placeSearchLabel: 'Search place', placeSearchPlaceholder: 'Enter an address or place name', search: 'Search', currentLocation: 'Location', hazardLayer: 'Layers', tsunami: 'Tsunami', landslide: 'Landslide', bear: 'Past bear sightings', boar: 'Past boar sightings', opacity: 'Opacity', hazardMapAria: 'Aomori City hazard map', officialMap: 'Open official detailed map', searchFailed: 'Could not find the place.', locationFailed: 'Could not get your location.', sourceUnavailable: 'Use the official detailed map because this layer is unavailable here.', noAnimalData: 'Official wildlife data is not configured. No fictional points are shown.', normal: 'There is no new information.', tips: ['Keep emergency supplies where you can grab them quickly.', 'Confirm evacuation sites and contact methods with your family.', 'Evacuate early when you feel unsafe.', 'Check official announcements from your municipality and JMA.', 'Prepare a flashlight and spare batteries for power outages.'] },
+    'zh-CN': { disasterInfo: '防灾信息', aomoriArea: '青森市', disasterTips: '防灾提示', hazardMap: '灾害地图', staffInstructions: '工作人员指示', noStaffInstructions: '目前没有工作人员指示。', placeSearchLabel: '搜索地点', placeSearchPlaceholder: '请输入地址或地名', search: '搜索', currentLocation: '当前位置', hazardLayer: '显示图层', tsunami: '海啸', landslide: '山体滑坡', bear: '过去的熊出没', boar: '过去的野猪出没', opacity: '透明度', hazardMapAria: '青森市灾害地图', officialMap: '打开官方详细地图', searchFailed: '无法搜索该地点。', locationFailed: '无法获取当前位置。', sourceUnavailable: '此图层无法在当前页面获取，请使用官方详细地图。', noAnimalData: '尚未配置官方野生动物数据，不显示虚构地点。', normal: '目前没有新的信息。', tips: ['将应急物品放在可以立即拿取的地方。', '与家人确认避难地点和联系方式。', '感到危险时，请尽早前往安全地点。', '通过自治体和气象厅公告确认正确信息。', '准备手电筒和备用电池以应对停电。'] },
+    'zh-TW': { disasterInfo: '防災資訊', aomoriArea: '青森市', disasterTips: '防災提示', hazardMap: '災害地圖', staffInstructions: '工作人員指示', noStaffInstructions: '目前沒有工作人員指示。', placeSearchLabel: '搜尋地點', placeSearchPlaceholder: '請輸入地址或地名', search: '搜尋', currentLocation: '目前位置', hazardLayer: '顯示圖層', tsunami: '海嘯', landslide: '土石流', bear: '過去的熊出沒', boar: '過去的野豬出沒', opacity: '透明度', hazardMapAria: '青森市災害地圖', officialMap: '開啟官方詳細地圖', searchFailed: '無法搜尋該地點。', locationFailed: '無法取得目前位置。', sourceUnavailable: '此圖層無法在目前頁面取得，請使用官方詳細地圖。', noAnimalData: '尚未設定官方野生動物資料，不顯示虛構地點。', normal: '目前沒有新的資訊。', tips: ['將緊急用品放在可以立即拿取的地方。', '與家人確認避難地點和聯絡方式。', '感到危險時，請儘早前往安全地點。', '透過自治體和氣象廳公告確認正確資訊。', '準備手電筒和備用電池以應對停電。'] },
+    ko: { disasterInfo: '방재 정보', aomoriArea: '아오모리시', disasterTips: '방재 팁', hazardMap: '재해 지도', staffInstructions: '직원 지시', noStaffInstructions: '현재 직원 지시가 없습니다.', placeSearchLabel: '장소 검색', placeSearchPlaceholder: '주소나 지명을 입력하세요', search: '검색', currentLocation: '현재 위치', hazardLayer: '레이어', tsunami: '쓰나미', landslide: '토사 재해', bear: '과거 곰 출몰', boar: '과거 멧돼지 출몰', opacity: '투명도', hazardMapAria: '아오모리시 재해 지도', officialMap: '공식 상세 지도 열기', searchFailed: '장소를 검색할 수 없습니다.', locationFailed: '현재 위치를 가져올 수 없습니다.', sourceUnavailable: '이 레이어를 가져올 수 없으므로 공식 상세 지도를 이용하세요.', noAnimalData: '공식 야생동물 데이터가 설정되지 않았습니다. 가상의 지점은 표시하지 않습니다.', normal: '현재 새로운 정보가 없습니다.', tips: ['비상용품을 바로 꺼낼 수 있는 곳에 준비하세요.', '가족과 대피 장소와 연락 방법을 확인하세요.', '위험을 느끼면 일찍 안전한 곳으로 대피하세요.', '지자체와 기상청 발표로 정확한 정보를 확인하세요.', '정전에 대비해 손전등과 여분의 배터리를 준비하세요.'] }
+  };
+  const localizedTerms = {
+    ja: { language: '言語', disasterGroup: '災害状況', evacuationGroup: '避難指示', animalGroup: '獣出現状況', roadGroup: '道路規制情報', landslideTerm: '土砂災害', floodTerm: '洪水', earthquakeTerm: '地震', shelterTerm: '高齢者等避難', orderTerm: '避難指示', emergencyTerm: '緊急安全確保', bearTerm: '熊', boarTerm: 'イノシシ', closeTerm: '通行止め', snowTerm: '積雪による交通規制' },
+    en: { language: 'Language', disasterGroup: 'Disaster status', evacuationGroup: 'Evacuation information', animalGroup: 'Wildlife sightings', roadGroup: 'Road restrictions', landslideTerm: 'Landslide', floodTerm: 'Flood', earthquakeTerm: 'Earthquake', shelterTerm: 'Evacuation preparation', orderTerm: 'Evacuation order', emergencyTerm: 'Emergency safety measures', bearTerm: 'Bear', boarTerm: 'Boar', closeTerm: 'Road closure', snowTerm: 'Snow traffic restriction' },
+    'zh-CN': { language: '语言', disasterGroup: '灾害状况', evacuationGroup: '避难指示', animalGroup: '野生动物出没', roadGroup: '道路管制', landslideTerm: '山体滑坡', floodTerm: '洪水', earthquakeTerm: '地震', shelterTerm: '老年人等避难', orderTerm: '避难指示', emergencyTerm: '紧急安全措施', bearTerm: '熊', boarTerm: '野猪', closeTerm: '道路封闭', snowTerm: '积雪交通管制' },
+    'zh-TW': { language: '語言', disasterGroup: '災害狀況', evacuationGroup: '避難指示', animalGroup: '野生動物出沒', roadGroup: '道路管制', landslideTerm: '土石流', floodTerm: '洪水', earthquakeTerm: '地震', shelterTerm: '高齡者等避難', orderTerm: '避難指示', emergencyTerm: '緊急安全措施', bearTerm: '熊', boarTerm: '野豬', closeTerm: '道路封閉', snowTerm: '積雪交通管制' },
+    ko: { language: '언어', disasterGroup: '재해 상황', evacuationGroup: '대피 지시', animalGroup: '야생동물 출몰', roadGroup: '도로 규제', landslideTerm: '토사 재해', floodTerm: '홍수', earthquakeTerm: '지진', shelterTerm: '고령자 등 대피', orderTerm: '대피 지시', emergencyTerm: '긴급 안전 확보', bearTerm: '곰', boarTerm: '멧돼지', closeTerm: '통행 금지', snowTerm: '적설 교통 규제' }
+  };
+  const localizedTips = { ja: translations.ja.tips, en: translations.en.tips, 'zh-CN': translations['zh-CN'].tips, 'zh-TW': translations['zh-TW'].tips, ko: translations.ko.tips };
+  let language = localStorage.getItem('siteLanguage') || 'ja';
+  const t = function(key) { return translations[language][key] || translations.ja[key] || key; };
+  const term = function(key) { return localizedTerms[language][key] || localizedTerms.ja[key]; };
+  const statusGroups = [
+    { title: 'disasterGroup', items: [{ title: 'landslideTerm', content: 'normal', level: 'normal' }, { title: 'floodTerm', content: 'normal', level: 'normal' }, { title: 'earthquakeTerm', content: 'normal', level: 'normal' }] },
+    { title: 'animalGroup', items: [{ title: 'bearTerm', content: 'normal', level: 'normal' }, { title: 'boarTerm', content: 'normal', level: 'normal' }] },
+    { title: 'roadGroup', items: [{ title: 'closeTerm', content: 'normal', level: 'normal' }, { title: 'snowTerm', content: 'normal', level: 'normal' }] }
+  ];
+  const statusRoot = document.getElementById('disasterStatus');
+  function applyLanguage() {
+    document.querySelectorAll('[data-i18n]').forEach(function(element) { element.textContent = translations[language][element.dataset.i18n] || term(element.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(element) { element.placeholder = t(element.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-aria-label]').forEach(function(element) { element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel)); });
+    statusRoot.replaceChildren();
+    statusGroups.forEach(function(group) { const wrapper = document.createElement('section'); wrapper.className = 'status-section'; const heading = document.createElement('h3'); heading.textContent = term(group.title); wrapper.appendChild(heading); const list = document.createElement('ul'); list.className = 'status-list'; group.items.forEach(function(entry) { const item = document.createElement('li'); item.className = 'status-item ' + entry.level; const title = document.createElement('span'); title.className = 'status-title'; title.textContent = term(entry.title); const content = document.createElement('span'); content.className = 'status-content'; content.textContent = t(entry.content); item.append(title, content); list.appendChild(item); }); wrapper.appendChild(list); statusRoot.appendChild(wrapper); });
+  }
+  window.addEventListener('siteLanguageChanged', function(event) {
+    language = event.detail;
+    applyLanguage();
+  });
+  applyLanguage();
 
-    // OpenStreetMapタイルを追加
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // 気象警報・注意報の自動更新機能
-    function updateWeatherWarnings() {
-        fetch('/api/weather_warnings', { cache: 'no-store' })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('気象情報を更新しました:', data);
-                updateWeatherContent(data);
-            })
-            .catch(error => {
-                console.error('気象情報の更新に失敗しました:', error);
-            });
-    }
-
-    function updateWeatherContent(data) {
-        const weatherContent = document.getElementById('weatherContent');
-
-        if (data.error) {
-            weatherContent.innerHTML = '<p>気象情報の取得に失敗しました</p>';
-            return;
-        }
-
-        let warningsHtml = '';
-        if (data.warnings && data.warnings.length > 0) {
-            warningsHtml = '<ul>';
-            data.warnings.forEach(warning => {
-                warningsHtml += `<li>${warning.name}（${warning.status}）</li>`;
-            });
-            warningsHtml += '</ul>';
-        } else {
-            warningsHtml = '<p>現在、警報・注意報は発表されていません</p>';
-        }
-
-        weatherContent.innerHTML = `
-            <p>対象地域: ${data.area_name || '青森市'}</p>
-            ${warningsHtml}
-            <p>最終確認: <span id="lastFetchTime">${data.last_fetch_time || '更新中...'}</span></p>
-            <p>気象庁最終発表: ${data.report_time || '不明'}</p>
-        `;
-    }
-
-    // 初回表示＋10分（600,000ミリ秒）おきに自動更新
-    updateWeatherWarnings();
-    setInterval(updateWeatherWarnings, 600000);
+  const map = L.map('hazardMap').setView([40.8244, 140.7400], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+  let marker = null; let overlay = null;
+  const officialLinks = { tsunami: 'https://disaportal.gsi.go.jp/maps/index.html?base=std&ll=140.7400,40.8244&z=11&ls=seamless_tsunami_scenario', landslide: 'https://disaportal.gsi.go.jp/maps/index.html?base=std&ll=140.7400,40.8244&z=11&ls=dosha_kiken' };
+  function showLayer(type) { if (overlay) { map.removeLayer(overlay); overlay = null; } const message = document.getElementById('mapMessage'); message.className = 'map-message'; message.textContent = type === 'bear' || type === 'boar' ? t('noAnimalData') : t('sourceUnavailable'); }
+  document.querySelectorAll('input[name="hazardType"]').forEach(function(input) { input.addEventListener('change', function() { showLayer(input.value); }); });
+  document.getElementById('opacityRange').addEventListener('input', function(event) { document.getElementById('opacityValue').textContent = event.target.value + '%'; if (overlay && overlay.setOpacity) overlay.setOpacity(Number(event.target.value) / 100); });
+  document.getElementById('mapSearchForm').addEventListener('submit', function(event) { event.preventDefault(); const query = document.getElementById('mapSearch').value.trim(); if (!query) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ja&q=' + encodeURIComponent(query)).then(function(response) { if (!response.ok) throw new Error(); return response.json(); }).then(function(data) { if (!data.length) throw new Error(); const location = data[0]; const latlng = [Number(location.lat), Number(location.lon)]; map.setView(latlng, 14); if (marker) map.removeLayer(marker); marker = L.marker(latlng).addTo(map).bindPopup(document.getElementById('mapSearch').value).openPopup(); }).catch(function() { const message = document.getElementById('mapMessage'); message.textContent = t('searchFailed'); message.className = 'map-message error'; }); });
+  document.getElementById('locationButton').addEventListener('click', function() { if (!navigator.geolocation) { document.getElementById('mapMessage').textContent = t('locationFailed'); return; } navigator.geolocation.getCurrentPosition(function(position) { const latlng = [position.coords.latitude, position.coords.longitude]; map.setView(latlng, 14); if (marker) map.removeLayer(marker); marker = L.marker(latlng).addTo(map).bindPopup(t('currentLocation')).openPopup(); }, function() { document.getElementById('mapMessage').textContent = t('locationFailed'); }); });
+  showLayer('tsunami');
 });
 </script>
 {% endblock %}

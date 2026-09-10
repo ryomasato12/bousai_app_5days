@@ -39,7 +39,7 @@
 			<label for="sort">並び順</label><br>
 			<select id="sort" name="sort">
 				<option value="name">施設名順</option>
-				<option value="distance">近い順</option>
+				<option value="distance">近い順（可能だったら）</option>
 				<option value="capacity">収容人数順</option>
 			</select>
 		</p>
@@ -54,8 +54,6 @@
 	</fieldset>
 
 </form>
-
-<a class="subtle-link" href="/all_shelters">条件を指定せず全施設を見る</a>
 </section>
 
 <aside class="map-search-card">
@@ -79,7 +77,7 @@
 	<ul id="liveShelterResults" class="result-list shelter-results">
 		{% for shelter in shelters %}
 		<li class="shelter-result">
-			<a class="shelter-link live-shelter-link" href="{{ url_for('shelter_detail', shelter_id=shelter.id) }}">
+			<a class="shelter-link live-shelter-link" href="{{ url_for('search_results', q=shelter.name) }}">
 				<span>{{ shelter.name }}</span><span class="shelter-arrow" aria-hidden="true">›</span>
 			</a>
 		</li>
@@ -123,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		previewName.textContent = shelter.name;
 		previewName.onclick = function() {
-			window.location.href = '/shelter/' + shelter.id;
+			window.location.href = '/search_results?q=' + encodeURIComponent(shelter.name);
 		};
 		previewCapacity.textContent = '収容人数: ' +
 			(shelter.capacity ? shelter.capacity + '人' : '未登録');
@@ -164,7 +162,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			item.className = 'shelter-result';
 			const link = document.createElement('a');
 			link.className = 'shelter-link live-shelter-link';
-			link.href = '/shelter/' + shelter.id;
+			const params = new URLSearchParams({ q: shelter.name });
+			const maxDistance = document.getElementById('max-distance').value;
+			const sort = document.getElementById('sort').value;
+			if (maxDistance) params.set('max_distance', maxDistance);
+			if (sort) params.set('sort', sort);
+			searchForm.querySelectorAll('input[type="checkbox"]:checked').forEach(function(control) {
+				params.set(control.name, control.value);
+			});
+			link.href = '/search_results?' + params.toString();
 			link.innerHTML = '<span>' + shelter.name + '</span><span class="shelter-arrow" aria-hidden="true">›</span>';
 			item.appendChild(link);
 			liveResults.appendChild(item);

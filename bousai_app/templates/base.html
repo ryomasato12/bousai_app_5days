@@ -19,7 +19,11 @@
       color: #4e5d70;
       background: var(--page-background);
       font-family: "Noto Sans JP", "Yu Gothic", sans-serif;
+      font-size: 16px;
     }
+
+    html[data-font-size="small"] body { font-size: 14px; }
+    html[data-font-size="large"] body { font-size: 18px; }
 
     .site-header {
       position: relative;
@@ -77,6 +81,53 @@
     .site-nav a:hover {
       text-decoration: underline;
     }
+
+    .settings-trigger {
+      display: block;
+      width: 100%;
+      padding: 9px 0;
+      border: 0;
+      color: var(--text-blue);
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .settings-trigger:hover { text-decoration: underline; }
+
+    .settings-panel {
+      display: none;
+      position: fixed;
+      top: 70px;
+      right: max(24px, calc((100% - 1380px) / 2));
+      z-index: 21000;
+      width: min(330px, calc(100% - 32px));
+      padding: 18px;
+      border: 1px solid #dbe3ee;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(57, 87, 125, 0.2);
+    }
+
+    .settings-panel.is-open { display: block; }
+
+    .settings-panel h2 { margin: 0 0 14px; color: var(--text-blue); font-size: 20px; }
+
+    .settings-panel fieldset { margin: 0 0 14px; padding: 0; border: 0; }
+
+    .settings-panel legend { margin-bottom: 8px; color: #3e5068; font-weight: 700; }
+
+    .settings-panel label { display: block; margin: 7px 0; color: #4e5d70; font-weight: 400; }
+
+    .settings-panel select { width: 100%; }
+
+    .settings-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+    .settings-actions button { flex: 1; padding: 9px; border: 0; border-radius: 6px; font: inherit; cursor: pointer; }
+
+    .settings-save { color: #fff; background: var(--brand-blue); }
+    .settings-close { color: #334155; background: #e8eef5; }
 
     .page-card {
       padding: 30px;
@@ -168,6 +219,10 @@
       font-size: 13px;
     }
 
+    .name-preview[hidden] {
+      display: none;
+    }
+
     .name-preview::before {
       position: absolute;
       top: -7px;
@@ -219,7 +274,7 @@
     }
 
     .live-shelter-link:hover,
-    .live-shelter-link:focus-visible { background: #f2f7ff; }
+    .live-shelter-link:focus-visible { background: transparent; }
 
     .search-checks {
       display: flex;
@@ -281,14 +336,14 @@
       justify-content: space-between;
       gap: 16px;
       padding: 14px 16px;
-      color: var(--text-blue);
+      color: #5f80ad;
       font-weight: 700;
       text-decoration: none;
     }
 
     .shelter-link:hover,
     .shelter-link:focus-visible {
-      background: #f2f7ff;
+      background: transparent;
       text-decoration: underline;
     }
 
@@ -464,6 +519,7 @@
       .site-title { font-size: 21px; }
       main { width: min(100% - 20px, 910px); margin-top: 20px; }
       .site-nav { top: 62px; right: 10px; }
+      .settings-panel { top: 62px; right: 10px; }
       .page-card { padding: 20px; }
       .page-title { font-size: 22px; }
       .search-checks { display: grid; gap: 10px; }
@@ -483,8 +539,11 @@
   <nav class="site-nav" id="siteNav">
     <a href="/">ホーム</a>
     <a href="/shelter_search">避難所検索</a>
-    <a href="/shelter_register">避難所登録</a>
-    <a href="/board">指示・発信ボード</a>
+    {% if session.logged_in %}
+      <a href="/shelter_register">避難所登録</a>
+      <a href="/board">指示・発信ボード</a>
+    {% endif %}
+    <button class="settings-trigger" id="settingsTrigger" type="button" aria-expanded="false" aria-controls="settingsPanel">設定</button>
     {% if session.logged_in %}
       <a href="/logout">ログアウト</a>
     {% else %}
@@ -492,14 +551,76 @@
     {% endif %}
   </nav>
 
+  <aside class="settings-panel" id="settingsPanel" aria-labelledby="settingsHeading" hidden>
+    <h2 id="settingsHeading">設定</h2>
+    <fieldset>
+      <legend>言語</legend>
+      <label><input type="radio" name="siteLanguage" value="ja"> 日本語</label>
+      <label><input type="radio" name="siteLanguage" value="en"> English</label>
+      <label><input type="radio" name="siteLanguage" value="zh-CN"> 简体中文</label>
+      <label><input type="radio" name="siteLanguage" value="zh-TW"> 繁體中文</label>
+      <label><input type="radio" name="siteLanguage" value="ko"> 한국어</label>
+    </fieldset>
+    <fieldset>
+      <legend>文字の大きさ</legend>
+      <label><input type="radio" name="siteFontSize" value="small"> 小</label>
+      <label><input type="radio" name="siteFontSize" value="medium"> 標準</label>
+      <label><input type="radio" name="siteFontSize" value="large"> 大</label>
+    </fieldset>
+    <div class="settings-actions">
+      <button class="settings-save" id="settingsSave" type="button">保存</button>
+      <button class="settings-close" id="settingsClose" type="button">閉じる</button>
+    </div>
+  </aside>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const menuButton = document.getElementById('menuButton');
       const siteNav = document.getElementById('siteNav');
+      const settingsTrigger = document.getElementById('settingsTrigger');
+      const settingsPanel = document.getElementById('settingsPanel');
+      const settingsSave = document.getElementById('settingsSave');
+      const settingsClose = document.getElementById('settingsClose');
+
+      function applyFontSize(size) {
+        document.documentElement.dataset.fontSize = size;
+      }
+
+      function setCheckedSetting(name, value) {
+        const input = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+        if (input) input.checked = true;
+      }
+
+      applyFontSize(localStorage.getItem('siteFontSize') || 'medium');
+      setCheckedSetting('siteLanguage', localStorage.getItem('siteLanguage') || 'ja');
+      setCheckedSetting('siteFontSize', localStorage.getItem('siteFontSize') || 'medium');
 
       menuButton.addEventListener('click', function() {
         const isOpen = siteNav.classList.toggle('is-open');
         menuButton.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      settingsTrigger.addEventListener('click', function() {
+        const isOpen = settingsPanel.classList.toggle('is-open');
+        settingsPanel.hidden = !isOpen;
+        settingsTrigger.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      function closeSettings() {
+        settingsPanel.classList.remove('is-open');
+        settingsPanel.hidden = true;
+        settingsTrigger.setAttribute('aria-expanded', 'false');
+      }
+
+      settingsClose.addEventListener('click', closeSettings);
+      settingsSave.addEventListener('click', function() {
+        const language = document.querySelector('input[name="siteLanguage"]:checked').value;
+        const fontSize = document.querySelector('input[name="siteFontSize"]:checked').value;
+        localStorage.setItem('siteLanguage', language);
+        localStorage.setItem('siteFontSize', fontSize);
+        applyFontSize(fontSize);
+        window.dispatchEvent(new CustomEvent('siteLanguageChanged', { detail: language }));
+        closeSettings();
       });
     });
   </script>

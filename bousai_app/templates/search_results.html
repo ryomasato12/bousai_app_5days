@@ -1,38 +1,383 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  .search-result-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 20px;
+  }
+
+  .search-result-detail,
+  .search-result-preview,
+  .no-results {
+    padding: 25px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(57, 87, 125, 0.10);
+  }
+
+  .search-result-preview {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    min-height: 520px;
+  }
+
+  .preview-photo,
+  .preview-map {
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+  }
+
+  .preview-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f6f8;
+    text-align: center;
+  }
+
+  .preview-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-placeholder { color: #999; font-size: 14px; }
+
+  .photo-placeholder .preview-icon {
+    margin-bottom: 8px;
+    color: #c5ccd6;
+    font-size: 42px;
+  }
+
+  .preview-map { min-height: 220px; }
+
+  .map-unavailable {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    margin: 0;
+    padding: 16px;
+    color: #68778a;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .section-title {
+    margin: 15px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #1f5ba8;
+    color: #1f5ba8;
+    font-size: 16px;
+  }
+
+  .section-title:first-child { margin-top: 0; }
+
+  .detail-row {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .detail-row:last-child { border-bottom: 0; }
+
+  .detail-label {
+    display: block;
+    margin-bottom: 4px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .detail-value {
+    color: #666;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .required { color: #e74c3c; }
+
+  .form-group { margin-bottom: 15px; }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #333;
+    font-size: 14px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .form-row-unit {
+    padding-bottom: 8px;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .checkin-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .facility-badge {
+    display: inline-block;
+    margin: 0 6px 4px 0;
+    padding: 4px 8px;
+    border: 1px solid #1f5ba8;
+    border-radius: 4px;
+    background: #e8f0f8;
+    color: #1f5ba8;
+    font-size: 12px;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .button-group button {
+    flex: 1;
+    padding: 10px;
+    border: 0;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .button-group button[type="button"] {
+    background: #b8d4e8;
+    color: #333;
+  }
+
+  .button-group button[type="button"]:hover { background: #a0c8e0; }
+
+  .button-group .checkin-btn {
+    background: #1f5ba8;
+    color: #fff;
+  }
+
+  .button-group .checkin-btn:hover { background: #1a4a8a; }
+
+  .preview-icon,
+  .no-results-icon {
+    display: block;
+    margin-bottom: 10px;
+    color: #ccc;
+    font-size: 48px;
+  }
+
+  .preview-text { margin: 0 0 5px; color: #999; font-size: 14px; }
+
+  .preview-distance {
+    margin: 15px 0 0;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    color: #666;
+    font-size: 13px;
+  }
+
+  .no-results { color: #999; text-align: center; }
+
+  .back-links { margin-top: 20px; text-align: center; }
+
+  .back-links a {
+    display: inline-block;
+    margin: 0 10px;
+    color: #1f5ba8;
+    text-decoration: none;
+  }
+
+  .back-links a:hover { text-decoration: underline; }
+
+  @media (max-width: 968px) {
+    .search-result-container { grid-template-columns: 1fr; }
+  }
+</style>
+
 <section class="page-card">
-<h2 class="page-title">検索結果</h2>
+  <h2 class="page-title">検索結果</h2>
 
-{% if results %}
-  <ul class="result-list shelter-results">
-    {% for shelter in results %}
-    <li class="shelter-result">
-      <a href="{{ url_for('shelter_detail', shelter_id=shelter.id) }}" class="shelter-link">
-        <span>{{ shelter.name }}</span>
-        <span class="shelter-arrow" aria-hidden="true">›</span>
-      </a>
-      <div class="shelter-tooltip" id="shelter-{{ shelter.id }}" role="tooltip">
-        <strong>{{ shelter.name }}</strong>
-        <a class="detail-link" href="{{ url_for('shelter_detail', shelter_id=shelter.id) }}">詳細情報を見る</a>
-        <span>距離: {% if shelter.distance_m is defined %}{{ shelter.distance_m }}m{% else %}未登録{% endif %}</span>
-        <span>収容人数: {% if shelter.capacity is defined %}{{ shelter.capacity }}人{% else %}未登録{% endif %}</span>
-        <span>津波: {% if shelter.tsunami or shelter.tsunami_ready %}対応{% else %}未登録{% endif %}</span>
-        <span>ペット: {% if shelter.pets or shelter.pet or shelter.pets_allowed %}可{% else %}未登録{% endif %}</span>
-        <span>車いす: {% if shelter.barrier_free %}対応{% else %}未登録{% endif %}</span>
-        <span>備蓄: {% if shelter.emergency_supplies or shelter.supplies %}あり{% else %}未登録{% endif %}</span>
+  {% for shelter in results %}
+  <div class="search-result-container">
+    <div class="search-result-detail">
+      <h3 class="section-title">検索避難所名</h3>
+      <div class="detail-row"><span class="detail-label">避難所名</span><div class="detail-value">{{ shelter.name or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">郵便番号</span><div class="detail-value">{{ shelter.postal_code or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">住所</span><div class="detail-value">{{ shelter.address or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">建物名</span><div class="detail-value">{{ shelter.building_name or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">避難所情報</span><div class="detail-value">{{ shelter.info or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">連絡先</span><div class="detail-value">{{ shelter.contact or '-' }}</div></div>
+
+      <h3 class="section-title">空き情報</h3>
+      <div class="detail-row">
+        <span class="detail-label"><span class="required">*</span>空きありor残り僅かor満席</span>
+        <div class="detail-value" id="availabilityDisplay-{{ shelter.id }}">-</div>
       </div>
-    </li>
-    {% endfor %}
-  </ul>
-{% else %}
-  <p>該当する避難所が見つかりませんでした</p>
-{% endif %}
 
-<p>
-  <a class="subtle-link" href="/shelter_search">検索条件を変更</a>
-  <span>　</span>
-  <a class="subtle-link" href="/">トップページへ戻る</a>
-</p>
+      <h3 class="section-title">チェックイン</h3>
+      <form method="post" action="/checkin" id="checkinForm-{{ shelter.id }}">
+        <input type="hidden" name="shelter_id" value="{{ shelter.id }}">
+        <div class="form-group">
+          <label for="adults-{{ shelter.id }}">大人</label>
+          <div class="form-row">
+            <select name="adults" id="adults-{{ shelter.id }}" class="checkin-select" data-shelter-id="{{ shelter.id }}">
+              <option value="">選択してください</option>
+              {% for count in range(1, 10) %}<option value="{{ count }}">{{ count }}人</option>{% endfor %}
+            </select>
+            <span class="form-row-unit">人</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="children-{{ shelter.id }}">子供</label>
+          <div class="form-row">
+            <select name="children" id="children-{{ shelter.id }}" class="checkin-select" data-shelter-id="{{ shelter.id }}">
+              <option value="">選択してください</option>
+              {% for count in range(1, 10) %}<option value="{{ count }}">{{ count }}人</option>{% endfor %}
+            </select>
+            <span class="form-row-unit">人</span>
+          </div>
+        </div>
+        <div class="button-group">
+          <button type="submit" class="checkin-btn">チェックイン</button>
+        </div>
+      </form>
+
+      <h3 class="section-title">設備</h3>
+      <div class="detail-value">
+        {% set facility_map = {'toilet': 'トイレ', 'water': '飲料水', 'power': '電力', 'wifi': 'Wi-Fi', 'medical': '医療'} %}
+        {% if shelter.facilities and shelter.facilities|length > 0 %}
+          {% for facility in shelter.facilities %}<span class="facility-badge">{{ facility_map.get(facility, facility) }}</span>{% endfor %}
+        {% else %}-{% endif %}
+      </div>
+    </div>
+
+    <div class="search-result-preview">
+      <div class="preview-photo">
+        {% set photo_url = shelter.photo_url or shelter.image_url or shelter.photo %}
+        {% if photo_url %}
+        <img src="{{ photo_url }}" alt="{{ shelter.name }}の外観写真">
+        {% else %}
+        <div class="photo-placeholder">
+          <span class="preview-icon" aria-hidden="true"><i class="fas fa-image"></i></span>
+          <p class="preview-text">外観写真未登録</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="preview-map" id="resultMap-{{ shelter.id }}" aria-label="{{ shelter.name }}の所在地図">
+        {% if shelter.latitude is not defined or shelter.longitude is not defined %}<p class="map-unavailable">所在地情報未登録</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="no-results">
+    <span class="no-results-icon" aria-hidden="true"><i class="fas fa-inbox"></i></span>
+    <p>該当する避難所が見つかりませんでした</p>
+  </div>
+  {% endfor %}
+
+  <nav class="back-links" aria-label="ページナビゲーション">
+    <a href="/shelter_search">検索画面に戻る</a>
+    <a href="/">トップページへ戻る</a>
+  </nav>
 </section>
+
+<script id="searchResultShelters" type="application/json">{{ results|tojson }}</script>
+<script>
+const shelterData = {};
+JSON.parse(document.getElementById('searchResultShelters').textContent).forEach(function(shelter) {
+  shelterData[String(shelter.id)] = shelter;
+});
+
+function updateAvailability(shelterId) {
+  const shelter = shelterData[String(shelterId)];
+  const capacity = Number(shelter && shelter.capacity || 0);
+  const adults = Number(document.getElementById('adults-' + shelterId).value || 0);
+  const children = Number(document.getElementById('children-' + shelterId).value || 0);
+  const display = document.getElementById('availabilityDisplay-' + shelterId);
+
+  if (!capacity) {
+    display.textContent = '-';
+    return;
+  }
+
+  const remaining = capacity - (adults + children * 0.5);
+  const thresholdCapacity = capacity / 3;
+  display.textContent = remaining <= 0 ? '満席' :
+    (remaining < thresholdCapacity ? '残り僅か' : '空きあり');
+}
+
+window.addEventListener('load', function() {
+  Object.keys(shelterData).forEach(function(shelterId) {
+    updateAvailability(shelterId);
+  });
+});
+
+document.querySelectorAll('.checkin-select').forEach(function(select) {
+  select.addEventListener('change', function() {
+    updateAvailability(select.dataset.shelterId);
+  });
+});
+
+document.querySelectorAll('[id^="checkinForm-"]').forEach(function(form) {
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const button = form.querySelector('.checkin-btn');
+    const shelterId = form.querySelector('[name="shelter_id"]').value;
+    button.disabled = true;
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { Accept: 'application/json' }
+    }).then(function(response) {
+      if (!response.ok) throw new Error();
+      return response.json();
+    }).then(function(data) {
+      document.getElementById('availabilityDisplay-' + shelterId).textContent = data.availability;
+      button.textContent = 'チェックイン済み';
+    }).catch(function() {
+      button.textContent = '再試行';
+    }).finally(function() {
+      button.disabled = false;
+    });
+  });
+});
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const shelters = JSON.parse(document.getElementById('searchResultShelters').textContent);
+  shelters.forEach(function(shelter) {
+    if (typeof shelter.latitude !== 'number' || typeof shelter.longitude !== 'number') return;
+    const mapElement = document.getElementById('resultMap-' + shelter.id);
+    if (!mapElement) return;
+    const map = L.map(mapElement).setView([shelter.latitude, shelter.longitude], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.marker([shelter.latitude, shelter.longitude]).addTo(map)
+      .bindPopup(shelter.name)
+      .openPopup();
+  });
+});
+</script>
 {% endblock %}
+

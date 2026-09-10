@@ -1,25 +1,154 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="page-card">
-<h2 class="page-title">避難所登録</h2>
-<p class="page-description">新しい避難所情報を登録します。</p>
+<style>
+  .register-page { width: min(1280px, 100%); margin: 0 auto; }
+  .register-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+  .register-header h2 { margin: 0; }
+  .register-actions { display: flex; gap: 8px; }
+  .register-actions a, .detail-actions a, .detail-actions button, .form-actions button { display: inline-block; padding: 9px 14px; border: 0; border-radius: 6px; color: #fff; background: var(--brand-blue); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .register-actions a:hover, .detail-actions a:hover, .form-actions button:hover { background: #244d94; }
+  .register-actions .log-button { background: #68778a; }
+  .register-layout { display: grid; grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.7fr); gap: 20px; align-items: start; }
+  .register-panel { min-width: 0; padding: 22px; border: 1px solid #dbe3ee; border-radius: 8px; background: #fff; box-shadow: 0 3px 12px rgba(57, 87, 125, 0.08); }
+  .register-panel h3 { margin: 0 0 16px; color: var(--text-blue); font-size: 20px; }
+  .shelter-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .shelter-list a { display: block; padding: 12px; border: 1px solid #e0e6ee; border-radius: 6px; color: #3e5068; text-decoration: none; }
+  .shelter-list a:hover, .shelter-list a.is-selected { border-color: var(--brand-blue); background: #f2f7ff; }
+  .shelter-list strong, .shelter-list span { display: block; }
+  .shelter-list strong { margin-bottom: 4px; color: #2859a5; }
+  .shelter-list span { color: #68778a; font-size: 13px; }
+  .empty-state, .form-message { padding: 14px; border-radius: 6px; background: #f5f7fa; color: #68778a; }
+  .form-message { margin: 0 0 16px; background: #eef5ff; color: #2859a5; }
+  .form-message.error { background: #fff1f1; color: #b42318; }
+  .detail-heading { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+  .detail-heading h3 { margin: 0; }
+  .detail-actions { display: flex; gap: 8px; }
+  .detail-actions .delete-button { background: #c83d32; }
+  .detail-actions .delete-button:hover { background: #a83229; }
+  .detail-row { margin: 0 0 13px; padding-bottom: 13px; border-bottom: 1px solid #e5eaf1; }
+  .detail-row:last-child { border-bottom: 0; }
+  .detail-label { display: block; margin-bottom: 4px; color: #3e5068; font-size: 13px; font-weight: 700; }
+  .detail-value { color: #536176; overflow-wrap: anywhere; }
+  .register-form { display: grid; gap: 15px; }
+  .required-note { margin: 0; color: #536176; font-size: 13px; }
+  .required-mark { color: #b42318; font-weight: 700; }
+  .field label { display: block; margin-bottom: 6px; color: #3e5068; font-weight: 700; }
+  .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; color: #334155; font: inherit; }
+  .field textarea { min-height: 100px; resize: vertical; }
+  .field small { display: block; margin-top: 5px; color: #68778a; font-size: 12px; }
+  .form-actions { display: flex; gap: 8px; }
+  .form-actions button:disabled { color: #68778a; background: #d8dee6; cursor: not-allowed; }
+  .form-actions .cancel-button { color: #334155; background: #e8eef5; }
+  .photo-controls { display: flex; gap: 8px; align-items: center; }
+  .photo-add-button { padding: 9px 13px; border: 0; border-radius: 6px; color: #fff; background: #68778a; font: inherit; cursor: pointer; }
+  .photo-add-button:hover { background: #536176; }
+  .photo-list { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+  .photo-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid #e0e6ee; border-radius: 6px; color: #536176; font-size: 13px; }
+  .photo-list img { width: 58px; height: 42px; object-fit: cover; border-radius: 4px; }
+  .photo-list label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; }
+  .logs { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .logs li { padding: 12px; border-bottom: 1px solid #e5eaf1; }
+  .logs strong, .logs span { display: block; }
+  .logs span { margin-top: 4px; color: #68778a; font-size: 13px; }
+  @media (max-width: 760px) { .register-header, .detail-heading { align-items: stretch; flex-direction: column; } .register-actions, .detail-actions { width: 100%; } .register-actions a, .detail-actions a, .detail-actions button { flex: 1; text-align: center; } .register-layout { grid-template-columns: 1fr; } }
+</style>
 
-<!-- 成功・エラーメッセージ表示 -->
-{% if success %}
-  <p class="form-message">{{ message }}</p>
-{% endif %}
+<div class="register-page">
+  <header class="register-header">
+    <h2 class="page-title">避難所登録</h2>
+    <div class="register-actions">
+      <a href="{{ url_for('shelter_register', mode='create') }}">新規登録</a>
+      <a class="log-button" href="{{ url_for('shelter_register', mode='logs') }}">ログ</a>
+    </div>
+  </header>
 
-{% if error %}
-  <p class="form-message error">{{ message }}</p>
-{% endif %}
+  {% if success %}<p class="form-message" role="status">{{ message }}</p>{% endif %}
+  {% if error %}<p class="form-message error" role="alert">{{ error_message }}</p>{% endif %}
 
-<form method="POST">
-  <p>
-    <label for="name">避難所名（必須）</label><br>
-    <input type="text" id="name" name="name">
-  </p>
-  <p><button type="submit">登録</button></p>
-</form>
-</section>
+  <div class="register-layout">
+    <section class="register-panel" aria-labelledby="shelter-list-heading">
+      <h3 id="shelter-list-heading">登録済み避難所一覧</h3>
+      {% if shelters %}
+      <ul class="shelter-list">
+        {% for shelter in shelters %}
+        <li>
+          <a class="{% if selected_id == shelter.id %}is-selected{% endif %}" href="{{ url_for('shelter_register', selected=shelter.id) }}">
+            <strong>{{ shelter.name or '-' }}</strong>
+            <span>{{ shelter.address1 or shelter.address or '-' }}{% if shelter.address2 %} {{ shelter.address2 }}{% endif %}</span>
+            <span>{{ shelter.phone or shelter.contact or '-' }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="empty-state">登録済みの避難所はありません。</p>{% endif %}
+    </section>
+
+    <section class="register-panel" aria-live="polite">
+      {% if mode == 'logs' %}
+      <div class="detail-heading"><h3>更新ログ</h3><a class="detail-actions" href="{{ url_for('shelter_register', selected=selected_id) }}">閉じる</a></div>
+      {% if logs %}<ul class="logs">{% for log in logs %}<li><strong>{{ log.action }}</strong><span>{{ log.operator }} / {{ log.created_at }}</span></li>{% endfor %}</ul>{% else %}<p class="empty-state">更新ログはありません。</p>{% endif %}
+      {% elif mode in ('create', 'edit') %}
+      <h3>{% if mode == 'create' %}新規登録{% else %}避難所を編集{% endif %}</h3>
+      <p class="required-note"><span class="required-mark">*</span> 必須項目</p>
+      <form class="register-form" method="post" enctype="multipart/form-data" action="{{ url_for('shelter_register') }}">
+        <input type="hidden" name="action" value="{{ 'update' if mode == 'edit' else 'create' }}">
+        {% if mode == 'edit' %}<input type="hidden" name="shelter_id" value="{{ selected.id }}">{% endif %}
+        <div class="field"><label for="name">名称 <span class="required-mark">*</span></label><input id="name" name="name" type="text" value="{{ selected.name if selected else '' }}" placeholder="青森市立〇〇小学校" required><small>避難所の正式名称を入力してください。</small></div>
+        <div class="field"><label for="address1">住所1（番地まで） <span class="required-mark">*</span></label><input id="address1" name="address1" type="text" value="{{ (selected.address1 if selected and selected.address1 else selected.address if selected else '') }}" placeholder="青森市中央1-1-1" required><small>市区町村から番地まで入力してください。</small></div>
+        <div class="field"><label for="address2">住所2（アパート名など）</label><input id="address2" name="address2" type="text" value="{{ selected.address2 if selected else '' }}" placeholder="〇〇ビル1階"><small>建物名や階数などがあれば入力してください。</small></div>
+        <div class="field"><label for="phone">避難所の電話番号 <span class="required-mark">*</span></label><input id="phone" name="phone" type="tel" value="{{ (selected.phone if selected and selected.phone else selected.contact if selected else '') }}" placeholder="017-123-4567" required><small>避難所へ連絡できる電話番号を入力してください。</small></div>
+        <div class="field"><label for="capacity">最大収容人数 <span class="required-mark">*</span></label><input id="capacity" name="capacity" type="number" min="1" value="{{ selected.capacity if selected else '' }}" placeholder="100" required><small>受け入れ可能な人数を入力してください。</small></div>
+        <div class="field"><label for="disaster_type">災害の種類</label><select id="disaster_type" name="disaster_type"><option value="">選択してください</option>{% for type in ['地震', '津波', '洪水', '土砂災害', '台風・大雨', '火災', 'その他'] %}<option value="{{ type }}" {% if selected and selected.disaster_type == type %}selected{% endif %}>{{ type }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="information">情報</label><textarea id="information" name="information" placeholder="トイレ、布団、シャワーなど">{{ selected.information if selected else '' }}</textarea><small>利用できる設備や注意事項を入力してください。</small></div>
+        <div class="field"><label>雰囲気の写真</label><div class="photo-controls"><button class="photo-add-button" id="photoAddButton" type="button">写真を追加</button><input id="photoInput" name="photos" type="file" accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp" hidden></div><ul class="photo-list" id="newPhotoList"></ul>{% if mode == 'edit' and selected.photos %}<p class="detail-label">登録済み写真</p><ul class="photo-list">{% for photo in selected.photos %}<li><label><img src="{{ photo }}" alt="登録済み写真"><span><input type="checkbox" name="delete_photos" value="{{ photo }}"> この写真を削除</span></label></li>{% endfor %}</ul>{% endif %}</div>
+        <div class="form-actions"><button id="submitButton" type="submit">{{ '更新する' if mode == 'edit' else '登録する' }}</button><a class="form-actions cancel-button" href="{{ url_for('shelter_register', selected=selected_id) }}">キャンセル</a></div>
+      </form>
+      {% elif selected %}
+      <div class="detail-heading"><h3>{{ selected.name }}</h3><div class="detail-actions"><a href="{{ url_for('shelter_register', selected=selected.id, mode='edit') }}">編集</a><form method="post" action="{{ url_for('shelter_register') }}" onsubmit="return confirm('この避難所を削除しますか？\n削除した情報は元に戻せません。');"><input type="hidden" name="action" value="delete"><input type="hidden" name="shelter_id" value="{{ selected.id }}"><button class="delete-button" type="submit">削除</button></form></div></div>
+      <div class="detail-row"><span class="detail-label">住所</span><div class="detail-value">{{ selected.address1 or selected.address or '-' }}{% if selected.address2 %} {{ selected.address2 }}{% endif %}</div></div>
+      <div class="detail-row"><span class="detail-label">電話番号</span><div class="detail-value">{{ selected.phone or selected.contact or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">最大収容人数</span><div class="detail-value">{{ selected.capacity or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">災害の種類</span><div class="detail-value">{{ selected.disaster_type or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">情報</span><div class="detail-value">{{ selected.information or selected.info or '-' }}</div></div>
+      <div class="detail-row"><span class="detail-label">写真</span><div class="detail-value">{% if selected.photos %}<ul class="photo-list">{% for photo in selected.photos %}<li><img src="{{ photo }}" alt="{{ selected.name }}の写真"></li>{% endfor %}</ul>{% else %}-{% endif %}</div></div>
+      {% else %}<p class="empty-state">左側の避難所を選択すると詳細が表示されます。<br>新規登録ボタンから登録フォームを開けます。</p>{% endif %}
+    </section>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const photoInput = document.getElementById('photoInput');
+  const addButton = document.getElementById('photoAddButton');
+  const photoList = document.getElementById('newPhotoList');
+  const submitButton = document.getElementById('submitButton');
+  if (!photoInput || !addButton || !photoList || !submitButton) return;
+  const selectedFiles = [];
+  addButton.addEventListener('click', function() { photoInput.click(); });
+  photoInput.addEventListener('change', function() {
+    Array.from(photoInput.files).forEach(function(file) { selectedFiles.push(file); });
+    photoInput.value = '';
+    renderFiles();
+  });
+  function renderFiles() {
+    photoList.replaceChildren();
+    selectedFiles.forEach(function(file, index) {
+      const item = document.createElement('li');
+      const name = document.createElement('span'); name.textContent = file.name;
+      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '取り消す';
+      remove.addEventListener('click', function() { selectedFiles.splice(index, 1); renderFiles(); });
+      item.append(name, remove); photoList.appendChild(item);
+    });
+    const transfer = new DataTransfer();
+    selectedFiles.forEach(function(file) { transfer.items.add(file); });
+    photoInput.files = transfer.files;
+  }
+  function validateRequired() {
+    submitButton.disabled = !['name', 'address1', 'phone', 'capacity'].every(function(id) { return document.getElementById(id).value.trim(); });
+  }
+  ['name', 'address1', 'phone', 'capacity'].forEach(function(id) { document.getElementById(id).addEventListener('input', validateRequired); });
+  validateRequired();
+});
+</script>
 {% endblock %}
